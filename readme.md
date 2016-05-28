@@ -1,1 +1,1 @@
-# Sokoban Game build using Laravel and React
+# Sokoban Game built using Laravel and React

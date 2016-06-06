@@ -55,8 +55,8 @@ export default function level(state = {}, action) {
             newPlayerState = ('*.'.indexOf(itemState)!==-1) ? '+' : '@';
 
             if (' -_.'.indexOf(itemState)!==-1) {
-                level.map[playerY+yOffset][playerX+xOffset]=newPlayerState
-                level.map[playerY][playerX]=newItemState
+                level.map[playerY+yOffset][playerX+xOffset]=newPlayerState;
+                level.map[playerY][playerX]=newItemState;
                 level.floorMoves++;
             } 
 
@@ -74,13 +74,11 @@ export default function level(state = {}, action) {
                     return '+.'.indexOf(cell)!==-1;
                 });
             });
-
             return level;
     };
 
     switch (action.type) {
-        case 'LOADLEVEL':
-            console.log(action.scenario);
+        case 'LOAD_LEVEL':
             level = Object.assign({},
                 action.scenario.levels[action.scenario.currentLevel]
             )
@@ -99,16 +97,16 @@ export default function level(state = {}, action) {
             };
             return level;
 
-        case 'MOVERIGHT': 
+        case 'MOVE_PLAYER_RIGHT': 
             return movePlayer(0, 1);
 
-        case 'MOVELEFT': 
+        case 'MOVE_PLAYER_LEFT': 
             return movePlayer(0, -1);
 
-        case 'MOVEDOWN': 
+        case 'MOVE_PLAYER_DOWN': 
             return movePlayer(1, 0);
 
-        case 'MOVEUP': 
+        case 'MOVE_PLAYER_UP': 
             return movePlayer(-1, 0);
 
     }

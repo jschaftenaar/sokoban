@@ -1,17 +1,9 @@
-export default function state(state = 'MENU', action) {
+export default function state(state = 'LOADING', action) {
 
 	switch (action.type) {
-
-		case 'LOADLEVEL':
-			return 'GAME';
-
-		case 'LOADING':
-			return 'LOADING';
-
-		case 'ERROR':
-			return 'ERROR';
-
+		case 'SWITCH_STATE':
+			return action.newState;
 	}
 
-      return state;
+     return state;
 }

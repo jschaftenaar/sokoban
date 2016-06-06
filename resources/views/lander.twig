@@ -7,8 +7,9 @@
     </head>
     <body>
         <h1>...</h1>
+        {{csrf_token()}}
         <div class="container">
-            <div id="SokoBanGame">
+            <div id="SokoBanGame" csrf="{{csrf_token()}}">
                 Hier
             </div>
         </div>

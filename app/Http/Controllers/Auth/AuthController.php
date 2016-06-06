@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Auth;
 
+use Auth;
 use App\User;
 use Validator;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 
@@ -69,4 +71,32 @@ class AuthController extends Controller
             'password' => bcrypt($data['password']),
         ]);
     }
+
+    protected function sendFailedLoginResponse() {
+        return response()->json([
+            'invalid' => $this->getFailedLoginMessage()
+        ], 500);
+    }
+
+    protected function handleUserWasAuthenticated(Request $request, $throttles)
+    {
+        if ($throttles) {
+            $this->clearLoginAttempts($request);
+        }
+
+        if (method_exists($this, 'authenticated')) {
+            return $this->authenticated($request, Auth::guard($this->getGuard())->user());
+        }
+
+        return response()->json(Auth::user());
+    }
+
+    public function logout()
+    {
+        Auth::guard($this->getGuard())->logout();
+
+       return response()->json((object)[]);
+    }
+
+
 }

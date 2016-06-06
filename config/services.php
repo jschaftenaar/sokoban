@@ -35,4 +35,9 @@ return [
         'secret' => env('STRIPE_SECRET'),
     ],
 
+    'oauth_github' => [
+        'client_id' => env('OAUTH_CLIENT_ID_GITHUB'),
+        'client_secret' => env('OAUTH_CLIENT_SECRET_GITHUB')
+    ],
+
 ];

@@ -11,11 +11,16 @@
 |
 */
 
+Route::post('user', function() {
+	if (Auth::check()) {
+		return response()->json(Auth::user()); 
+	} else {
+		return response()->json((object)[]);
+	}
+});
 
 Route::get('/scenario/{scenario}', function() {
-
-sleep(1); // a temporary delay for the loader screen
-
+	sleep(1); // a temporary delay for the loader screen
 	return [
 		'title' => 'My First Map Pack',
 		'description' => 'This is my description',
@@ -38,8 +43,11 @@ sleep(1); // a temporary delay for the loader screen
 			]			
 		]
 	];
-
 });
+
+Route::auth();
+
+Route::get('/home', 'HomeController@index');
 
 Route::get('/', function () {
     return view('lander');

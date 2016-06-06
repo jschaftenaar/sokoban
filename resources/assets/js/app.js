@@ -4,6 +4,10 @@ import store from './store.js';
 import Menu from './components/Menu.js';
 import Game from './components/Game.js';
 import Loader from './components/Loader.js';
+import Login from './components/Login.js';
+import $ from "jquery";
+import {switchState, initializeFailure, loadUser, movePlayer} from './actions/game.js';
+
 
 import '../sass/app.scss';
 
@@ -19,149 +23,182 @@ function addMyKeyboardEvent(element, eventName, callback) {
 
 var SokoBanGame = React.createClass({
 
-  componentWillMount:function() {
-     addMyKeyboardEvent(document, "keydown", function (e) {
-      e = e || window.event;
-      const state = this.props.store.getState();
-      if (state.state=='GAME' &&
-        state.level.finished &&
-        e.keyCode==32) {
-        this.progressLevel(e);
-      }
+    componentWillMount:function() {
+        addMyKeyboardEvent(document, "keydown", (event) => {
+            const state = store.getState();
+            event = event || window.event;
+            if (state.state=='GAME') {
+                if (state.level.finished && event.keyCode==32) {
+                    if (state.scenario.currentLevel==state.scenario.levels.length-1) {
+                        store.dispatch(switchState('MENU'));
+                    } else {
+                        this.progressLevel(event);
+                    }
+                }
+                if (event.keyCode=='27') {
+                    this.resetLevel(event);
+                }
+                if (!state.level.finished) {
+                    switch (event.keyCode) {
+                        case 38:
+                            store.dispatch(movePlayer('UP'));
+                        break;
 
-      if (state.state=='GAME' && 
-          e.keyCode=='27') {
-        this.resetLevel(e);
-      }
+                        case 40:
+                            store.dispatch(movePlayer('DOWN'));
+                        break;
+                        
+                        case 37:
+                            store.dispatch(movePlayer('LEFT'));
+                        break;
+                        
+                        case 39:
+                            store.dispatch(movePlayer('RIGHT'));
+                        break;
+                    }
+                }
+            }
+        });
+    },
 
-      if (state.state=='GAME' &&
-          !state.level.finished) {
-      switch (e.keyCode) {
-        case 38:
-          this.props.store.dispatch({
-            type: 'MOVEUP'
-          });
-          break;
-        case 40:
-          this.props.store.dispatch({
-            type: 'MOVEDOWN'
-          });
-          break;
-        case 37:
-          this.props.store.dispatch({
-            type: 'MOVELEFT'
-          });
-          break;
-        case 39:
-          this.props.store.dispatch({
-            type: 'MOVERIGHT'
-          });
-          break;
-      }
+    resetLevel: function(event) {
+        event && event.preventDefault();
+        store.dispatch({
+            type:'LOAD_LEVEL',
+            scenario: store.getState().scenario
+        });
+    },
+  
+    progressLevel: function(event) {
+        event && event.preventDefault();
+        store.dispatch({
+            type: 'PROGRESS_LEVEL'
+        });
+        store.dispatch({
+            type: 'LOAD_LEVEL',
+            scenario: store.getState().scenario
+        });
+    },
+  
+    render: function () {
+        let gameState = '';
+        const state = store.getState();
+        switch (state.state) {
+            case 'GAME':
+                gameState = (
+                    <Game
+                        store={store}
+                        resetLevel={this.resetLevel}
+                        progressLevel={this.progressLevel}
+                        backToMenu={this.backToMenu}
+                    />
+                );
+            break;
+    
+            case 'LOADING':
+                gameState = <Loader/>;
+            break;
+    
+            case 'LOGIN':
+                gameState = (
+                    <Login
+                        store={store}
+                        attemptLogin={this.attemptLogin}
+                    />
+                );
+            break;
+    
+            case 'ERROR':
+                gameState = (<div>Error happened</div>);
+            break;
+    
+            default: 
+                gameState = (
+                    <Menu
+                        store={store}
+                        onStartNewGameClick={this.startGame}
+                        onLoadGame={this.loadGame}
+                        onAboutGame={this.aboutGame}
+                        onLoginClick={this.loginAccount}
+                    />
+                );
+            break;
+        }
+        return (
+            <div className="container">
+                {gameState}
+            </div>
+        )
+    },
+  
+    startGame: function(event) {
+        event.preventDefault();
+        this.loadScenario('mappack1');
+    },
+  
+    loadScenario: function(scenario) {
+        store.dispatch(switchState('LOADING'));
+        fetch('/index.php/scenario/'+scenario+'.json',{
+            method: 'get'
+        })
+        .then((response) => {
+            if (response.ok) {
+                return response.json();  
+            } else {
+                throw new Error(response.statusText);
+            }
+        })
+        .then((data) => {
+            store.dispatch({
+                type: 'LOAD_SCENARIO',
+                scenario: data
+            });
+            store.dispatch({
+                type: 'LOAD_LEVEL',
+                scenario: store.getState().scenario
+            });
+            store.dispatch(switchState('GAME'));
+        })
+        .catch((error) => {
+            store.dispatch(switchState('ERROR'));
+            console.log(error);
+        });
     }
-    }.bind(this));
-
-  },
-
-  resetLevel: function(event) {
-    event && event.preventDefault();
-    this.props.store.dispatch({
-        type:'LOADLEVEL',
-        scenario: this.props.store.getState().scenario
-    });
-  },
-
-  progressLevel: function(event) {
-    event && event.preventDefault();
-
-    this.props.store.dispatch({
-        type: 'PROGRESSLEVEL'
-    });
-    this.props.store.dispatch({
-        type: 'LOADLEVEL',
-        scenario: this.props.store.getState().scenario
-    });
-  },
-
-  render: function () {
-    let gameState = '';
-  	const state = this.props.store.getState();
-
-  	switch (state.state) {
-      case 'GAME':
-        gameState = <Game
-          store={this.props.store}
-          resetLevel={this.resetLevel}
-          progressLevel={this.progressLevel}
-         />;
-        break;
-
-      case 'LOADING':
-        gameState = <Loader/>;
-        break;
-
-      case 'ERROR':
-        gameState = (<div>Error happened</div>);
-        break;
-
-  		default: 
-  			gameState = (
-          <Menu
-            store={this.props.store}
-            onStartGame={this.startGame}
-            onLoadGame={this.loadGame}
-            onAboutGame={this.aboutGame}
-          />
-        );
-        break;
-  	}
-
-    return (
-      <div className="container">
-        {gameState}
-      </div>
-    )
-  },
-
-  startGame: function() {
-    this.loadScenario('mappack1');
-  },
-
-  loadScenario: function(scenario) {
-    this.props.store.dispatch({type:'LOADING'});
-    fetch('/index.php/scenario/'+scenario+'.json',{
-      method: 'get'
-    })
-    .then(function(response) {
-      if (response.ok) {
-        return response.json();  
-      } else {
-        throw new Error(response.statusText);
-      }
-    })
-    .then(function(data) {
-      this.props.store.dispatch({
-        type: 'LOADSCENARIO',
-        scenario: data
-      });
-      this.props.store.dispatch({
-        type: 'LOADLEVEL',
-        scenario: this.props.store.getState().scenario
-      });
-    }.bind(this))
-    .catch(function(error) {
-      this.props.store.dispatch({type:'ERROR'});
-      console.log(error);
-    }.bind(this));
-  }
 })
 
+const targetGameElement = document.getElementById('SokoBanGame');
+
 const render = () => {
-  ReactDOM.render(
-    <SokoBanGame store={store} />,
-    document.getElementById('SokoBanGame')
-  )
+    ReactDOM.render(
+        <SokoBanGame store={store}/>,
+        targetGameElement 
+    )
 };
 
-store.subscribe(render)
-render();
+store.subscribe(render);
+
+store.dispatch({
+    type: 'SET_CSRF',
+    csrf: targetGameElement.getAttribute("csrf")
+});
+
+$.ajax({
+    method: 'POST',
+    url: '/user',
+    dataType: 'json',
+    xhrFields: {
+        withCredentials: true
+    },
+    data: {
+        _token: store.getState().csrf
+    }
+}).
+done((response) => {
+    if (response.id && response.name) {
+        store.dispatch(loadUser(response))
+    }
+    store.dispatch(switchState('MENU'));
+}).
+fail((xhrRequest, status) => {
+    store.dispatch(initializeFailure(JSON.parse(xhrRequest.responseText)));
+});

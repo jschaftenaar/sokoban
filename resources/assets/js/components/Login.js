@@ -42,7 +42,7 @@ export default function Login(props) {
             props.store.dispatch(switchState('MENU'));
         }).
         fail((xhrRequest, status) => {
-            props.store.dispatch(loginFailure(JSON.parse(xhrRequest.responseText)));
+            props.store.dispatch(errorHappened(JSON.parse(xhrRequest.responseText)));
         });
 
     }
@@ -86,12 +86,12 @@ export default function Login(props) {
                 </fieldset>
                 <button onClick={onAttemptLogin}>Submit</button>
                 or login with<br/>
-                <a href="/login/">facebook</a><br/>
-                <a href="/login/">twitter</a><br/>
-                <a href="/login/">linkedin</a><br/>
-                <a href="/login/">google</a><br/>
+                <a href="/login/facebook">facebook</a><br/>
+                <a href="/login/twitter">twitter</a><br/>
+                <a href="/login/linkedin">linkedin</a><br/>
+                <a href="/login/google">google</a><br/>
                 <a href="/login/github">github</a><br/>
-                <a href="/login/">bitbucket</a>
+                <a href="/login/bitbucket">bitbucket</a>
             </div>
         );
     }

@@ -13,7 +13,7 @@
 
 Route::post('user', function() {
 	if (Auth::check()) {
-		return response()->json(Auth::user()); 
+		return response()->json(Auth::user());
 	} else {
 		return response()->json((object)[]);
 	}
@@ -40,7 +40,7 @@ Route::get('/scenario/{scenario}', function() {
 			[
 				'title' => 'Level 2',
 				'map' => '3#|#.3#|#*$-#|#--@#|5#'
-			]			
+			]
 		]
 	];
 });

@@ -5,7 +5,7 @@ export function loadUser(user) {
 	};
 }
 
-export function initializeFailure(error) {
+export function errorHappened(error) {
 	return {
 		type: 'ERROR',
 		error

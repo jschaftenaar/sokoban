@@ -30,7 +30,7 @@ var SokoBanGame = React.createClass({
             if (state.state=='GAME') {
                 if (state.level.finished && event.keyCode==32) {
                     if (state.scenario.currentLevel==state.scenario.levels.length-1) {
-                        store.dispatch(switchState('MENU'));
+                        this.backToMenu(event);
                     } else {
                         this.progressLevel(event);
                     }
@@ -47,11 +47,11 @@ var SokoBanGame = React.createClass({
                         case 40:
                             store.dispatch(movePlayer('DOWN'));
                         break;
-                        
+
                         case 37:
                             store.dispatch(movePlayer('LEFT'));
                         break;
-                        
+
                         case 39:
                             store.dispatch(movePlayer('RIGHT'));
                         break;
@@ -68,7 +68,7 @@ var SokoBanGame = React.createClass({
             scenario: store.getState().scenario
         });
     },
-  
+
     progressLevel: function(event) {
         event && event.preventDefault();
         store.dispatch({
@@ -79,7 +79,12 @@ var SokoBanGame = React.createClass({
             scenario: store.getState().scenario
         });
     },
-  
+
+    backToMenu: (event) => {
+        event && event.preventDefault();
+        store.dispatch(switchState('MENU'));
+    },
+
     render: function () {
         let gameState = '';
         const state = store.getState();
@@ -94,11 +99,11 @@ var SokoBanGame = React.createClass({
                     />
                 );
             break;
-    
+
             case 'LOADING':
                 gameState = <Loader/>;
             break;
-    
+
             case 'LOGIN':
                 gameState = (
                     <Login
@@ -107,19 +112,18 @@ var SokoBanGame = React.createClass({
                     />
                 );
             break;
-    
+
             case 'ERROR':
                 gameState = (<div>Error happened</div>);
             break;
-    
-            default: 
+
+            default:
                 gameState = (
                     <Menu
                         store={store}
                         onStartNewGameClick={this.startGame}
                         onLoadGame={this.loadGame}
                         onAboutGame={this.aboutGame}
-                        onLoginClick={this.loginAccount}
                     />
                 );
             break;
@@ -130,38 +134,36 @@ var SokoBanGame = React.createClass({
             </div>
         )
     },
-  
+
     startGame: function(event) {
         event.preventDefault();
         this.loadScenario('mappack1');
     },
-  
+
     loadScenario: function(scenario) {
         store.dispatch(switchState('LOADING'));
-        fetch('/index.php/scenario/'+scenario+'.json',{
-            method: 'get'
-        })
-        .then((response) => {
-            if (response.ok) {
-                return response.json();  
-            } else {
-                throw new Error(response.statusText);
-            }
-        })
-        .then((data) => {
+        $.ajax({
+            method: 'GET',
+            url: '/index.php/scenario/'+scenario+'.json',
+            dataType: 'json',
+            xhrFields: {
+                withCredentials: true
+            },
+        }).
+        done((response) => {
+            console.log(response);
             store.dispatch({
                 type: 'LOAD_SCENARIO',
-                scenario: data
+                scenario: response
             });
             store.dispatch({
                 type: 'LOAD_LEVEL',
                 scenario: store.getState().scenario
             });
             store.dispatch(switchState('GAME'));
-        })
-        .catch((error) => {
-            store.dispatch(switchState('ERROR'));
-            console.log(error);
+        }).
+        fail((xhrRequest, status) => {
+            store.dispatch(initializeFailure(JSON.parse(xhrRequest.responseText)));
         });
     }
 })
@@ -171,7 +173,7 @@ const targetGameElement = document.getElementById('SokoBanGame');
 const render = () => {
     ReactDOM.render(
         <SokoBanGame store={store}/>,
-        targetGameElement 
+        targetGameElement
     )
 };
 

@@ -2,33 +2,42 @@ export default function user(state = { password: '', email: '' }, action) {
 
     let newState = Object.assign({}, state);
 
-	switch (action.type) {
+    switch (action.type) {
 
-		case 'SET_PASSWORD':
+        case 'SET_PASSWORD':
             newState.password = action.password;
-		break;
+        break;
 
-		case 'SET_EMAIL': 
+        case 'SET_EMAIL': 
             newState.email = action.email;
-		break;
+        break;
 
-		case 'ATTEMPT_LOGIN':
+        case 'ATTEMPT_LOGIN':
             newState.attemptingLogin = true;
-		break;
+        break;
 
-		case 'SET_USER':
-			newState.attemptingLogin = false;
-			newState.name = action.user.name;
-			newState.email = action.user.email;
-			newState.id = action.user.id;
-		break;
+        case 'LOGOUT_USER':
+            let toUnset = ['name','email','id'];
+            toUnset.forEach((item)=> {
+                if (newState[item]) {
+                    delete newState[item];
+                }
+            });
+        break;
 
-		case 'LOGIN_FAILURE':
-			newState.attemptingLogin = false;
-			newState.loginFailureReason = action.reason;
-		break;
+        case 'SET_USER':
+            newState.attemptingLogin = false;
+            newState.name = action.user.name;
+            newState.email = action.user.email;
+            newState.id = action.user.id;
+        break;
 
-	}
+        case 'LOGIN_FAILURE':
+            newState.attemptingLogin = false;
+            newState.loginFailureReason = action.reason;
+        break;
+
+    }
 
     return newState;
 }

@@ -1,8 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "prod": "gulp --production",
-    "dev": "gulp watch"
+    "build": "webpack --progress --colors --watch"
   },
   "devDependencies": {
     "babel": "^6.5.2",

@@ -1,5 +1,5 @@
 import './App.css';
-import React, { useRef, useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { Canvas, useLoader } from '@react-three/fiber'
 import { TextureLoader } from 'three/src/loaders/TextureLoader'
 
@@ -13,19 +13,7 @@ const i = {
   crate_placed: 6
 }
 
-const level = [
-  [0,0,2,2,2,2,2,0],
-  [2,2,2,1,1,1,2,0],
-  [2,3,1,5,1,1,2,0],
-  [2,2,2,1,5,3,2,0],
-  [2,3,2,2,5,1,2,0],
-  [2,1,2,1,3,1,2,2],
-  [2,5,1,6,5,5,3,2],
-  [2,1,1,1,3,1,1,2],
-  [2,2,2,2,2,2,2,2],
-];
-
-function Level({currentPosition}) {
+function Level({position, level}) {
   const textureMap = {
     1: useLoader(TextureLoader, 'sokoban_floor.png'),
     2: useLoader(TextureLoader, 'sokoban_wall.png'),
@@ -37,22 +25,27 @@ function Level({currentPosition}) {
   return level.map((row, rowIndex) => (
     row.map((cell, columnIndex) => {
       let textureType = cell
-      if (columnIndex === currentPosition.x && rowIndex===currentPosition.y) {
-        textureType='4'
+      if (columnIndex === position.x && rowIndex===position.y) {
+        textureType=i.player
+      }
+      let height = 1;
+      if ([i.floor, i.target, i.blank].includes(textureType)) {
+        height = 0;
       }
       return (
-        <mesh key={`${rowIndex}_${columnIndex}_${textureType}_${cell}`} position={[columnIndex-(level.length/2)+1, level.length-(rowIndex)-(level[0].length/2)-1, 0]}>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial map={textureMap[textureType]} />
+        <mesh key={`${rowIndex}_${columnIndex}_${textureType}_${cell}`} position={[(columnIndex-(level.length/2)+1), (level.length-(rowIndex)-(level[0].length/2)-1), height ? 0 : -.5]}>
+          <boxGeometry args={[1, 1, height]} />
+          <meshStandardMaterial map={textureMap[textureType]}/>
         </mesh>
       )
     })
   ))
 }
 
-const moveToNewPosition = (newX, newY, currentPosition, setCurrentPosition) => {
-  const deltaX = newX - currentPosition.x;
-  const deltaY = newY - currentPosition.y; 
+const nextPosition = (newX, newY, position, setPosition, level, setLevel, history, setHistory) => {
+  const newLevel = JSON.parse(JSON.stringify(level));
+  const deltaX = newX - position.x;
+  const deltaY = newY - position.y;
   if (!(newX >= 0 && newX < level[0].length && newY >= 0 && newY < level.length)) {
     return false
   } 
@@ -62,43 +55,60 @@ const moveToNewPosition = (newX, newY, currentPosition, setCurrentPosition) => {
   if ([i.crate, i.crate_placed].includes(level[newY][newX])) {
     switch(level[newY+deltaY][newX+deltaX]) {
       case i.floor:
-        level[newY+deltaY][newX+deltaX] = i.crate;
-        level[newY][newX] = level[newY][newX] === i.crate ? i.floor : i.target;
+        newLevel[newY+deltaY][newX+deltaX] = i.crate;
+        newLevel[newY][newX] = (level[newY][newX] === i.crate) ? i.floor : i.target;
       break;
       case i.target:
-        level[newY+deltaY][newX+deltaX] = i.crate_placed;
-        level[newY][newX] = i.floor;
+        newLevel[newY+deltaY][newX+deltaX] = i.crate_placed;
+        newLevel[newY][newX] = i.floor;
       break;
       default:
         return false;
     }
   }
-  setCurrentPosition({y:newY, x: newX});
+  setHistory([...history, {position, level}]);
+  setLevel(newLevel)
+  setPosition({y:newY, x: newX});
 }
 
 function App() {
-  const [_currentPosition, _setCurrentPosition] = useState({x:2,y:2});
-  const stateRef = useRef(_currentPosition);
-  const setCurrentPosition = data => {
-    stateRef.current = data;
-    _setCurrentPosition(data)
-  }
-  useEffect(() => {
-    const keyDownHandler = (event) => {
+  const [position, setPosition] = useState({x:2,y:2});
+  const [level, setLevel] = useState([
+    [0,0,2,2,2,2,2,0],
+    [2,2,2,1,1,1,2,0],
+    [2,3,1,5,1,1,2,0],
+    [2,2,2,1,5,3,2,0],
+    [2,3,2,2,5,1,2,0],
+    [2,1,2,1,3,1,2,2],
+    [2,5,1,6,5,5,3,2],
+    [2,1,1,1,3,1,1,2],
+    [2,2,2,2,2,2,2,2],
+  ])
+  const [history, setHistory] = useState([]);
+  const keyDownHandler = (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
+      event.preventDefault();
+      if (!history.length) {
+         return false;
+      }
+      const last = history.pop();
+      setHistory(history);
+      setLevel(last.level);
+      setPosition(last.position);
+    } else {
       let preventDefault = true;
-      const currentPosition = stateRef.current;
       switch (event.key) {
         case 'ArrowUp':
-          moveToNewPosition(currentPosition.x, currentPosition.y-1, currentPosition, setCurrentPosition)
+          nextPosition(position.x, position.y-1, position, setPosition, level, setLevel, history, setHistory)
         break;
         case 'ArrowRight':
-          moveToNewPosition(currentPosition.x+1, currentPosition.y, currentPosition, setCurrentPosition)
+          nextPosition(position.x+1, position.y, position, setPosition, level, setLevel, history, setHistory)
         break;
         case 'ArrowDown':
-          moveToNewPosition(currentPosition.x, currentPosition.y+1, currentPosition, setCurrentPosition)
+          nextPosition(position.x, position.y+1, position, setPosition, level, setLevel, history, setHistory)
         break;
         case 'ArrowLeft':
-          moveToNewPosition(currentPosition.x-1, currentPosition.y, currentPosition, setCurrentPosition)
+          nextPosition(position.x-1, position.y, position, setPosition, level, setLevel, history, setHistory)
         break;
         default:
           preventDefault = false;
@@ -106,18 +116,20 @@ function App() {
       if (preventDefault) {
         event.preventDefault();
       }
-    };
+    }
+  };
+  useEffect(() => {
     window.addEventListener("keydown", keyDownHandler);
     return () => { window.removeEventListener('keydown', keyDownHandler); }
-  }, []);
-
+  });
   return (
     <div style={{backgroundColor:'#ff00ff'}}>
       <div style={{width:'800px', height:'600px', backgroundColor:'teal'}}>
-        <Canvas orthographic camera={{ zoom: 50, position: [0, 0, 100]}}>
+        <Canvas camera={{ fov: 70, position: [0, 0, 7] }}>
+          <ambientLight />
+          <pointLight position={[10, 10, 10]} />
           <Suspense fallback={null}>
-            <ambientLight />
-            <Level currentPosition={stateRef.current}/>
+            <Level position={position} level={level}/>
           </Suspense>
         </Canvas>
       </div>
